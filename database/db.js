@@ -3,23 +3,24 @@ const { Pool } = pg;
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false },
+  ssl: false,
 });
 
 // ── Инициализация таблиц ──────────────────────────────────────────────────────
 export async function initDB() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
-      telegram_id  BIGINT PRIMARY KEY,
-      username     TEXT,
-      gender       TEXT,
-      age          INTEGER,
-      weight       NUMERIC,
-      height       NUMERIC,
-      goal         TEXT,
-      level        TEXT,
-      is_premium   BOOLEAN DEFAULT FALSE,
-      created_at   TIMESTAMP DEFAULT NOW()
+      telegram_id   BIGINT PRIMARY KEY,
+      username      TEXT,
+      gender        TEXT,
+      age           INTEGER,
+      weight        NUMERIC,
+      height        NUMERIC,
+      goal          TEXT,
+      level         TEXT,
+      is_premium    BOOLEAN DEFAULT FALSE,
+      workout_days  TEXT[] DEFAULT NULL,
+      created_at    TIMESTAMP DEFAULT NOW()
     );
 
     CREATE TABLE IF NOT EXISTS tracking (
@@ -30,6 +31,12 @@ export async function initDB() {
       UNIQUE(telegram_id, date)
     );
   `);
+
+  // Миграция: добавить колонку если её нет (для уже существующих БД)
+  await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS workout_days TEXT[] DEFAULT NULL;
+  `);
+
   console.log("✅ БД инициализирована");
 }
 
@@ -55,6 +62,22 @@ export async function getUser(telegramId) {
 export async function getAllUsers() {
   const { rows } = await pool.query("SELECT telegram_id FROM users");
   return rows;
+}
+
+// ── Дни тренировок (только для премиум) ──────────────────────────────────────
+export async function saveWorkoutDays(telegramId, days) {
+  await pool.query(
+    `UPDATE users SET workout_days = $1 WHERE telegram_id = $2`,
+    [days, telegramId]
+  );
+}
+
+export async function getWorkoutDays(telegramId) {
+  const { rows } = await pool.query(
+    "SELECT workout_days FROM users WHERE telegram_id = $1",
+    [telegramId]
+  );
+  return rows[0]?.workout_days || null;
 }
 
 // ── Трекинг тренировок ────────────────────────────────────────────────────────
