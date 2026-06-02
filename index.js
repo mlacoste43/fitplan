@@ -33,6 +33,12 @@ import {
   handleWeekFull,
 } from "./handlers/plans.js";
 
+import {
+  handleSetDays,
+  handleToggleDay,
+  handleSaveDays,
+} from "./handlers/workoutDays.js";
+
 // ── HTTP сервер для Render ────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 createServer((req, res) => {
@@ -53,6 +59,7 @@ bot.command("calories", handleCaloriesCommand);
 bot.command("track",    handleTrackCommand);
 bot.command("today",    handleTodayCommand);
 bot.command("premium",  handlePremium);
+bot.command("setdays",  handleSetDays);   // ← новая команда
 
 // ── Кнопки онбординга ─────────────────────────────────────────────────────────
 bot.callbackQuery(/^gender_/, handleGender);
@@ -68,6 +75,11 @@ bot.callbackQuery(/^day_/,     handleWorkoutDay);
 bot.callbackQuery("calories",  handleCalories);
 bot.callbackQuery("track",     handleTrack);
 bot.callbackQuery("premium",   handlePremium);
+bot.callbackQuery("setdays",   handleSetDays);  // ← кнопка из меню
+
+// ── Выбор дней тренировок (премиум) ──────────────────────────────────────────
+bot.callbackQuery(/^wday_toggle_/, handleToggleDay);
+bot.callbackQuery("wday_save",     handleSaveDays);
 
 // ── Недельное меню ────────────────────────────────────────────────────────────
 bot.callbackQuery("week_menu",  handleWeekMenu);
