@@ -2,13 +2,14 @@ import { InlineKeyboard } from "grammy";
 
 export const mainMenuKb = () =>
   new InlineKeyboard()
-    .text("📋 План питания",      "nutrition").row()
-    .text("🏋️ План тренировок",  "workout").row()
-    .text("🔥 Калории и БЖУ",    "calories").row()
-    .text("✅ Отметить тренировку","track").row()
-    .text("⚙️ Изменить параметры","restart").row()
-    .text("🗓 Меню на неделю",     "week_menu").row()
-    .text("⭐ Премиум",           "premium");
+    .text("📋 План питания",        "nutrition").row()
+    .text("🏋️ План тренировок",    "workout").row()
+    .text("🔥 Калории и БЖУ",      "calories").row()
+    .text("✅ Отметить тренировку", "track").row()
+    .text("📅 Мои дни тренировок",  "setdays").row()   // ← новая кнопка
+    .text("⚙️ Изменить параметры",  "restart").row()
+    .text("🗓 Меню на неделю",       "week_menu").row()
+    .text("⭐ Премиум",             "premium");
 
 export const genderKb = () =>
   new InlineKeyboard()
@@ -31,6 +32,7 @@ export const levelKb = () =>
 export const backKb = () =>
   new InlineKeyboard().text("🏠 Главное меню", "menu");
 
+// Клавиатура для просмотра дней тренировочного плана (существующая)
 export const workoutDaysKb = (days) => {
   const kb = new InlineKeyboard();
   for (const day of Object.keys(days)) {
@@ -45,3 +47,19 @@ export const weekMenuKb = () =>
     .text("📅 Меню на сегодня",    "week_today").row()
     .text("📋 Меню на всю неделю", "week_full").row()
     .text("🏠 Главное меню",       "menu");
+
+// Клавиатура для выбора дней тренировок (премиум, wday_toggle_*)
+const ALL_DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+export const selectWorkoutDaysKb = (selected = []) => {
+  const kb = new InlineKeyboard();
+  ALL_DAYS.forEach((day, i) => {
+    const isOn = selected.includes(day);
+    kb.text(isOn ? `✅ ${day}` : day, `wday_toggle_${day}`);
+    if (i === 3) kb.row(); // разрыв после Чт: первый ряд Пн Вт Ср Чт, второй Пт Сб Вс
+  });
+  kb.row();
+  kb.text("💾 Сохранить", "wday_save");
+  kb.text("🏠 Меню",      "menu");
+  return kb;
+};
