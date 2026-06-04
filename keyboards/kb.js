@@ -1,15 +1,18 @@
 import { InlineKeyboard } from "grammy";
 
-export const mainMenuKb = () =>
-  new InlineKeyboard()
-    .text("📋 План питания",        "nutrition").row()
-    .text("🏋️ План тренировок",    "workout").row()
-    .text("🔥 Калории и БЖУ",      "calories").row()
-    .text("✅ Отметить тренировку", "track").row()
-    .text("📅 Мои дни тренировок",  "setdays").row()   // ← новая кнопка
-    .text("⚙️ Изменить параметры",  "restart").row()
-    .text("🗓 Меню на неделю",       "week_menu").row()
-    .text("⭐ Премиум",             "premium");
+// Главное меню — замки на премиум-функциях
+export const mainMenuKb = (isPremium = false) => {
+  const lock = isPremium ? "" : " 🔒";
+  return new InlineKeyboard()
+    .text("📋 План питания",              "nutrition").row()
+    .text("🏋️ План тренировок",          "workout").row()
+    .text("🔥 Калории и БЖУ",             "calories").row()
+    .text(`✅ Отметить тренировку${lock}`, "track").row()
+    .text(`📅 Мои дни тренировок${lock}`,  "setdays").row()
+    .text(`🗓 Меню на неделю${lock}`,      "week_menu").row()
+    .text(`🔔 Напоминания${lock}`,         "reminders").row()
+    .text("⚙️ Изменить параметры",        "params");
+};
 
 export const genderKb = () =>
   new InlineKeyboard()
@@ -32,7 +35,13 @@ export const levelKb = () =>
 export const backKb = () =>
   new InlineKeyboard().text("🏠 Главное меню", "menu");
 
-// Клавиатура для просмотра дней тренировочного плана (существующая)
+// Клавиатура мини-экрана продажи: купить + назад
+export const premiumBackKb = () =>
+  new InlineKeyboard()
+    .text("⭐ Купить Премиум", "buy_premium").row()
+    .text("← Назад",          "menu");
+
+// Кнопки дней тренировочного плана (просмотр)
 export const workoutDaysKb = (days) => {
   const kb = new InlineKeyboard();
   for (const day of Object.keys(days)) {
@@ -48,18 +57,29 @@ export const weekMenuKb = () =>
     .text("📋 Меню на всю неделю", "week_full").row()
     .text("🏠 Главное меню",       "menu");
 
-// Клавиатура для выбора дней тренировок (премиум, wday_toggle_*)
+// Выбор дней тренировок (Премиум, тоглы)
 const ALL_DAYS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+// Меню изменения параметров профиля
+export const paramsMenuKb = () =>
+  new InlineKeyboard()
+    .text("👤 Пол",          "edit_gender").row()
+    .text("🎂 Возраст",      "edit_age").row()
+    .text("⚖️ Вес",          "edit_weight").row()
+    .text("📏 Рост",         "edit_height").row()
+    .text("🎯 Цель",         "edit_goal").row()
+    .text("💡 Уровень",      "edit_level").row()
+    .text("🏠 Главное меню", "menu");
 
 export const selectWorkoutDaysKb = (selected = []) => {
   const kb = new InlineKeyboard();
   ALL_DAYS.forEach((day, i) => {
     const isOn = selected.includes(day);
     kb.text(isOn ? `✅ ${day}` : day, `wday_toggle_${day}`);
-    if (i === 3) kb.row(); // разрыв после Чт: первый ряд Пн Вт Ср Чт, второй Пт Сб Вс
+    if (i === 3) kb.row();
   });
   kb.row();
   kb.text("💾 Сохранить", "wday_save");
-  kb.text("🏠 Меню",      "menu");
+  kb.text("◀️ Назад",     "menu");
   return kb;
 };
