@@ -12,6 +12,13 @@ import {
   handleLevel,
   handleTextInput,
   handleRestart,
+  handleParams,
+  handleEditGender,
+  handleEditGoal,
+  handleEditLevel,
+  handleEditAge,
+  handleEditWeight,
+  handleEditHeight,
 } from "./handlers/onboarding.js";
 
 import {
@@ -28,6 +35,7 @@ import {
   handleTrackCommand,
   handleTodayCommand,
   handlePremium,
+  handleReminders,
   handleWeekMenu,
   handleWeekToday,
   handleWeekFull,
@@ -59,7 +67,7 @@ bot.command("calories", handleCaloriesCommand);
 bot.command("track",    handleTrackCommand);
 bot.command("today",    handleTodayCommand);
 bot.command("premium",  handlePremium);
-bot.command("setdays",  handleSetDays);   // ← новая команда
+bot.command("setdays",  handleSetDays);
 
 // ── Кнопки онбординга ─────────────────────────────────────────────────────────
 bot.callbackQuery(/^gender_/, handleGender);
@@ -67,17 +75,28 @@ bot.callbackQuery(/^goal_/,   handleGoal);
 bot.callbackQuery(/^level_/,  handleLevel);
 bot.callbackQuery("restart",  handleRestart);
 
-// ── Кнопки меню ───────────────────────────────────────────────────────────────
-bot.callbackQuery("menu",      handleMenu);
-bot.callbackQuery("nutrition", handleNutrition);
-bot.callbackQuery("workout",   handleWorkout);
-bot.callbackQuery(/^day_/,     handleWorkoutDay);
-bot.callbackQuery("calories",  handleCalories);
-bot.callbackQuery("track",     handleTrack);
-bot.callbackQuery("premium",   handlePremium);
-bot.callbackQuery("setdays",   handleSetDays);  // ← кнопка из меню
+// ── Параметры профиля ──────────────────────────────────────────────────────────
+bot.callbackQuery("params",        handleParams);
+bot.callbackQuery("edit_gender",   handleEditGender);
+bot.callbackQuery("edit_goal",     handleEditGoal);
+bot.callbackQuery("edit_level",    handleEditLevel);
+bot.callbackQuery("edit_age",      handleEditAge);
+bot.callbackQuery("edit_weight",   handleEditWeight);
+bot.callbackQuery("edit_height",   handleEditHeight);
 
-// ── Выбор дней тренировок (премиум) ──────────────────────────────────────────
+// ── Кнопки меню ───────────────────────────────────────────────────────────────
+bot.callbackQuery("menu",        handleMenu);
+bot.callbackQuery("nutrition",   handleNutrition);
+bot.callbackQuery("workout",     handleWorkout);
+bot.callbackQuery(/^day_/,       handleWorkoutDay);
+bot.callbackQuery("calories",    handleCalories);
+bot.callbackQuery("track",       handleTrack);
+bot.callbackQuery("reminders",   handleReminders);
+bot.callbackQuery("premium",     handlePremium);
+bot.callbackQuery("buy_premium", handlePremium);
+
+// ── Дни тренировок ────────────────────────────────────────────────────────────
+bot.callbackQuery("setdays",       handleSetDays);
 bot.callbackQuery(/^wday_toggle_/, handleToggleDay);
 bot.callbackQuery("wday_save",     handleSaveDays);
 
