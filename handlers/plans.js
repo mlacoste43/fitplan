@@ -1,4 +1,4 @@
-import { backKb, mainMenuKb, workoutDaysKb } from "../keyboards/kb.js";
+import { backKb, mainMenuKb, premiumBackKb, weekMenuKb, workoutDaysKb } from "../keyboards/kb.js";
 import { getUser, logWorkout, getStreak } from "../database/db.js";
 import {
   calculateCalories,
@@ -9,18 +9,64 @@ import {
   GENDER_LABELS,
   DAYS_RU,
 } from "../plans/data.js";
+import { getWeeklyNutritionDay, getFullWeekNutrition, getWeekNumber } from "../plans/weekly.js";
 
 const NO_PROFILE = "Сначала создай профиль — нажми /start";
 
+// ── Мини-экраны продаж ────────────────────────────────────────────────────────
+const PREMIUM_SCREENS = {
+  track:
+    "✅ Трекер тренировок — Премиум\n\n" +
+    "Отмечай каждую тренировку и следи за своей серией:\n" +
+    "• Серия дней без пропусков 🔥\n" +
+    "• Мотивация не бросать на полпути\n" +
+    "• Статистика активности\n\n" +
+    "💰 Премиум: 149 ₽/мес\nВключает трекер, дни тренировок, напоминания и недельное меню",
+
+  setdays:
+    "📅 Мои дни тренировок — Премиум\n\n" +
+    "Выбери дни когда тренируешься — и бот подстроится под тебя:\n" +
+    "• Напоминания только в твои дни\n" +
+    "• Никакого спама в дни отдыха\n" +
+    "• Можно менять когда угодно\n\n" +
+    "💰 Премиум: 149 ₽/мес\nВключает трекер, дни тренировок, напоминания и недельное меню",
+
+  week_menu:
+    "🗓 Меню на неделю — Премиум\n\n" +
+    "Получай готовое меню питания на 7 дней вперёд:\n" +
+    "• Завтрак, обед, ужин и перекусы\n" +
+    "• Меню подобрано под твою цель\n" +
+    "• Обновляется каждую неделю\n\n" +
+    "💰 Премиум: 149 ₽/мес\nВключает трекер, дни тренировок, напоминания и недельное меню",
+
+  reminders:
+    "🔔 Напоминания — Премиум\n\n" +
+    "Бот будет писать тебе сам:\n" +
+    "• Утром — план питания на день\n" +
+    "• За час до тренировки — план упражнений\n" +
+    "• Вечером — итог дня и мотивация\n\n" +
+    "💰 Премиум: 149 ₽/мес\nВключает трекер, дни тренировок, напоминания и недельное меню",
+};
+
+async function showPremiumScreen(ctx, feature) {
+  const text = PREMIUM_SCREENS[feature];
+  if (ctx.callbackQuery) {
+    await ctx.editMessageText(text, { reply_markup: premiumBackKb() });
+  } else {
+    await ctx.reply(text, { reply_markup: premiumBackKb() });
+  }
+}
+
 // ── Меню ──────────────────────────────────────────────────────────────────────
 export async function handleMenu(ctx) {
-  await ctx.editMessageText("🏠 Главное меню:", { reply_markup: mainMenuKb() });
+  const user = await getUser(ctx.from.id);
+  await ctx.editMessageText("🏠 Главное меню:", { reply_markup: mainMenuKb(user?.is_premium) });
 }
 
 export async function handleMenuCommand(ctx) {
   const user = await getUser(ctx.from.id);
   if (!user) { await ctx.reply(NO_PROFILE); return; }
-  await ctx.reply("🏠 Главное меню:", { reply_markup: mainMenuKb() });
+  await ctx.reply("🏠 Главное меню:", { reply_markup: mainMenuKb(user.is_premium) });
 }
 
 // ── План питания ──────────────────────────────────────────────────────────────
@@ -46,12 +92,11 @@ export async function handleWorkout(ctx) {
   const plan = getWorkoutPlan(user.goal, user.level);
   if (!plan) { await ctx.editMessageText("План не найден.", { reply_markup: backKb() }); return; }
 
-  const text =
+  await ctx.editMessageText(
     `Цель: ${GOAL_LABELS[user.goal]} | Уровень: ${LEVEL_LABELS[user.level]}\n\n` +
-    `Расписание: ${plan.schedule}\n\n` +
-    `Выбери день чтобы посмотреть подробности:`;
-
-  await ctx.editMessageText(text, { reply_markup: workoutDaysKb(plan.days) });
+    `Расписание: ${plan.schedule}\n\nВыбери день чтобы посмотреть подробности:`,
+    { reply_markup: workoutDaysKb(plan.days) }
+  );
 }
 
 export async function handleWorkoutCommand(ctx) {
@@ -61,11 +106,11 @@ export async function handleWorkoutCommand(ctx) {
   const plan = getWorkoutPlan(user.goal, user.level);
   if (!plan) { await ctx.reply("План не найден."); return; }
 
-  const text =
+  await ctx.reply(
     `Цель: ${GOAL_LABELS[user.goal]} | Уровень: ${LEVEL_LABELS[user.level]}\n\n` +
-    `Расписание: ${plan.schedule}\n\nВыбери день:`;
-
-  await ctx.reply(text, { reply_markup: workoutDaysKb(plan.days) });
+    `Расписание: ${plan.schedule}\n\nВыбери день:`,
+    { reply_markup: workoutDaysKb(plan.days) }
+  );
 }
 
 // ── Конкретный день тренировки ────────────────────────────────────────────────
@@ -76,7 +121,6 @@ export async function handleWorkoutDay(ctx) {
 
   const plan   = getWorkoutPlan(user.goal, user.level);
   const detail = plan?.days?.[day] || "День не найден";
-
   await ctx.editMessageText(`${day}\n\n${detail}`, { reply_markup: backKb() });
 }
 
@@ -114,10 +158,11 @@ function _caloriesText(user) {
   );
 }
 
-// ── Трекер тренировок ─────────────────────────────────────────────────────────
+// ── Трекер тренировок (Премиум) ───────────────────────────────────────────────
 export async function handleTrack(ctx) {
   const user = await getUser(ctx.from.id);
   if (!user) { await ctx.editMessageText(NO_PROFILE, { reply_markup: backKb() }); return; }
+  if (!user.is_premium) { await showPremiumScreen(ctx, "track"); return; }
 
   await logWorkout(ctx.from.id);
   const streak = await getStreak(ctx.from.id);
@@ -132,6 +177,7 @@ export async function handleTrack(ctx) {
 export async function handleTrackCommand(ctx) {
   const user = await getUser(ctx.from.id);
   if (!user) { await ctx.reply(NO_PROFILE); return; }
+  if (!user.is_premium) { await showPremiumScreen(ctx, "track"); return; }
 
   await logWorkout(ctx.from.id);
   const streak = await getStreak(ctx.from.id);
@@ -139,6 +185,18 @@ export async function handleTrackCommand(ctx) {
 
   await ctx.reply(
     `Тренировка засчитана!\n\nТвоя серия: ${streak} дн. ${fire}\n\nТак держать! 💪`,
+    { reply_markup: backKb() }
+  );
+}
+
+// ── Напоминания (Премиум) ─────────────────────────────────────────────────────
+export async function handleReminders(ctx) {
+  const user = await getUser(ctx.from.id);
+  if (!user) { await ctx.editMessageText(NO_PROFILE, { reply_markup: backKb() }); return; }
+  if (!user.is_premium) { await showPremiumScreen(ctx, "reminders"); return; }
+
+  await ctx.editMessageText(
+    "🔔 Напоминания включены!\n\nТы будешь получать уведомления утром, перед тренировкой и вечером.",
     { reply_markup: backKb() }
   );
 }
@@ -159,14 +217,17 @@ export async function handleTodayCommand(ctx) {
   }
 }
 
-// ── Премиум ───────────────────────────────────────────────────────────────────
+// ── Купить Премиум ────────────────────────────────────────────────────────────
 export async function handlePremium(ctx) {
   const text =
-    "Премиум — ФитПлан\n\n" +
-    "Бесплатно:\n• 1 план питания\n• Базовый калькулятор КБЖУ\n\n" +
-    "Стандарт — 149 руб/мес:\n• Смена плана в любое время\n• Трекер тренировок и серии\n• Ежедневные напоминания\n\n" +
-    "Про — 299 руб/мес:\n• Всё из Стандарт\n• Корректировка плана по прогрессу\n• Приоритетная поддержка\n\n" +
-    "Для оплаты напиши администратору бота.";
+    "⭐ Премиум — ФитПлан\n\n" +
+    "Что входит в подписку:\n" +
+    "• ✅ Трекер тренировок и серии дней\n" +
+    "• 📅 Выбор твоих дней тренировок\n" +
+    "• 🗓 Меню питания на неделю вперёд\n" +
+    "• 🔔 Напоминания под твоё расписание\n\n" +
+    "💰 149 ₽/мес\n\n" +
+    "Для оплаты напиши администратору: @admin";
 
   if (ctx.callbackQuery) {
     await ctx.editMessageText(text, { reply_markup: backKb() });
@@ -175,21 +236,11 @@ export async function handlePremium(ctx) {
   }
 }
 
-// ── Недельное меню (только для премиум) ───────────────────────────────────────
-import { getWeeklyNutritionDay, getFullWeekNutrition, getWeekNumber } from "../plans/weekly.js";
-import { weekMenuKb } from "../keyboards/kb.js";
-
+// ── Недельное меню (Премиум) ──────────────────────────────────────────────────
 export async function handleWeekMenu(ctx) {
   const user = await getUser(ctx.from.id);
   if (!user) { await ctx.editMessageText(NO_PROFILE, { reply_markup: backKb() }); return; }
-
-  if (!user.is_premium) {
-    await ctx.editMessageText(
-      "Недельное меню доступно только для премиум подписчиков.\n\nНажми /premium чтобы узнать подробности.",
-      { reply_markup: backKb() }
-    );
-    return;
-  }
+  if (!user.is_premium) { await showPremiumScreen(ctx, "week_menu"); return; }
 
   await ctx.editMessageText(
     `Неделя ${getWeekNumber()} — выбери что показать:`,
