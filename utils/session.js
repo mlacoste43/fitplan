@@ -29,10 +29,12 @@ export function clearSession(userId) {
 }
 
 export const STEPS = {
-  GENDER: "gender",
-  AGE:    "age",
-  WEIGHT: "weight",
-  HEIGHT: "height",
-  GOAL:   "goal",
-  LEVEL:  "level",
+  GENDER:     "gender",
+  AGE:        "age",
+  WEIGHT:     "weight",
+  HEIGHT:     "height",
+  ACTIVITY:   "activity",
+  GOAL:       "goal",
+  LEVEL:      "level",
+  LOG_WEIGHT: "log_weight",
 };

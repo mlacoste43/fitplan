@@ -1504,3 +1504,11 @@ export function getFullWeekNutrition(goal) {
   const weekIndex = getCurrentWeekNumber() % plans.length;
   return plans[weekIndex];
 }
+
+// Получить конкретную неделю по номеру (1-4)
+export function getWeekNutrition(goal, weekNumber) {
+  const plans = WEEKLY_NUTRITION[goal];
+  if (!plans) return null;
+  const idx = Math.max(0, Math.min(weekNumber - 1, plans.length - 1));
+  return plans[idx] || null;
+}
